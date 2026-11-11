@@ -50,6 +50,10 @@ function Layout({ children }) {
         <p className="fname">Anta henné</p>
         <p className="ftag">L’élégance au naturel</p>
         <Socials />
+        <p className="small">
+          Site créé par{' '}
+          <a href="https://wa.me/22656067179?text=Bonjour%20Yacouba%2C%20je%20vous%20contacte%20depuis%20le%20site%20Anta%20henn%C3%A9." target="_blank" rel="noreferrer">Yacouba Ouedraogo</a>
+        </p>
         <p className="small">© {new Date().getFullYear()} Anta henné · <Link to="/admin">Espace Anta</Link></p>
       </footer>
       <a className="float" href={wa(HELLO)} target="_blank" rel="noreferrer" aria-label="Écrire sur WhatsApp"><FaWhatsapp /></a>
