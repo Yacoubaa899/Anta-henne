@@ -62,6 +62,14 @@ function Panel() {
   const [cle2, setCle2] = useState(0)
   const [form, setForm] = useState(() => Object.fromEntries(CHAMPS.map(([k]) => [k, reg[k] || ''])))
   const [msg, setMsg] = useState('')
+  const [stats, setStats] = useState(null)
+
+  useEffect(() => {
+    const j = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10)
+    const q = (f) => f(supabase.from('visites').select('*', { count: 'exact', head: true })).then((r) => r.count ?? 0)
+    Promise.all([q((x) => x.eq('jour', j(0))), q((x) => x.gte('jour', j(6))), q((x) => x.gte('jour', j(29))), q((x) => x)])
+      .then(([auj, sem, mois, total]) => setStats({ auj, sem, mois, total }))
+  }, [])
 
   const faire = async (texte, action) => {
     setMsg(texte)
@@ -158,6 +166,18 @@ function Panel() {
     <div className="adm">
       <h1 className="t">Espace Anta</h1>
       {msg && <p className="msg">{msg}</p>}
+
+      <section>
+        <h3>Visites du site</h3>
+        {stats ? (
+          <div className="stats">
+            {[['Aujourd’hui', stats.auj], ['7 derniers jours', stats.sem], ['30 derniers jours', stats.mois], ['Depuis le début', stats.total]].map(([l, n]) => (
+              <div key={l}><strong>{n}</strong><span>{l}</span></div>
+            ))}
+          </div>
+        ) : <p className="small">Chargement…</p>}
+        <p className="small">Une visite = un appareil par jour. Tes propres visites connectée ne sont pas comptées.</p>
+      </section>
 
       <section>
         <h3>Catégories</h3>

@@ -51,6 +51,17 @@ export function SiteProvider({ children }) {
   }, [reload])
 
   useEffect(() => {
+    const jour = new Date().toISOString().slice(0, 10)
+    if (localStorage.getItem('vuJour') === jour) return
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) return
+      supabase.from('visites').insert({ jour }).then(({ error }) => {
+        if (!error) localStorage.setItem('vuJour', jour)
+      })
+    })
+  }, [])
+
+  useEffect(() => {
     localStorage.setItem('favs', JSON.stringify(favs))
   }, [favs])
 
