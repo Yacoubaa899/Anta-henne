@@ -365,12 +365,27 @@ function About() {
   return (
     <>
       <h1 className="t">À propos</h1>
-      <div className="pad">
+      <div className="pad apropos">
         <h3>Une passion, un savoir-faire</h3>
         <p>
-          Anta henné crée des motifs au henné dessinés à la main pour les mariées et les grandes occasions,
-          en alliant tradition et élégance. Texte à remplacer par la présentation d’Anta.
+          Chez Anta henné, chaque motif est dessiné à la main, un trait après l’autre, avec patience et précision,
+          pour sublimer vos mains et vos pieds le jour qui compte.
         </p>
+        <p>
+          Mariage, fêtes, cérémonies : nous mêlons motifs traditionnels et touches modernes pour créer un henné
+          qui vous ressemble. Élégant, raffiné, unique.
+        </p>
+        <p className="valeurs">Mariage · Beauté · Tradition</p>
+        <ul>
+          <li>✔ Des motifs dessinés à la main, un par un</li>
+          <li>✔ Des modèles pour chaque occasion</li>
+          <li>✔ Un accompagnement personnalisé, de la réservation jusqu’au grand jour</li>
+        </ul>
+        <p>Choisissez votre modèle, réservez votre date, et laissez-nous sublimer votre moment.</p>
+        <div className="btns">
+          <Link className="btn dark" to="/modeles">Voir les modèles</Link>
+          <Link className="btn wa" to="/reservation">Réserver</Link>
+        </div>
       </div>
     </>
   )

@@ -906,3 +906,27 @@ footer a {
     font-size: 12px;
     font-weight: 500
 }
+
+.apropos {
+    max-width: 640px
+}
+
+.apropos h3 {
+    font-size: 24px;
+    margin: 0 0 8px
+}
+
+.apropos .valeurs {
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-size: 20px;
+    color: var(--orange)
+}
+
+.apropos ul {
+    list-style: none;
+    padding: 0;
+    margin: 12px 0;
+    display: grid;
+    gap: 6px
+}
