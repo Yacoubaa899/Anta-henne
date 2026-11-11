@@ -9,6 +9,7 @@ const CHAMPS = [
   ['facebook', 'Lien Facebook'],
   ['youtube', 'Lien YouTube'],
   ['adresse', 'Adresse'],
+  ['maps', 'Lien Google Maps de la boutique'],
 ]
 
 async function compresser(file, max) {

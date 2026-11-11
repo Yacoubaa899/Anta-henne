@@ -407,7 +407,7 @@ function Contact() {
         <Socials />
         <p>
           <a className="btn dark" target="_blank" rel="noreferrer"
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(adresse)}`}>Voir sur Google Maps</a>
+            href={reg.maps ? lien(reg.maps) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(adresse)}`}>Voir sur Google Maps</a>
         </p>
       </div>
     </>
