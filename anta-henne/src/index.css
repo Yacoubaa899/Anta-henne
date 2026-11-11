@@ -975,3 +975,24 @@ footer a {
     display: grid;
     gap: 6px
 }
+
+.choix {
+    background: #fff;
+    border: 1px solid var(--sable);
+    border-radius: 12px;
+    padding: 12px;
+    display: grid;
+    gap: 8px;
+    text-align: center
+}
+
+.minis {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center
+}
+
+.minis .th {
+    width: 72px
+}

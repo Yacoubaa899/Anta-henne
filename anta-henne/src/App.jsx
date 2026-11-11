@@ -250,7 +250,7 @@ function Modele() {
         <button className="btn line" onClick={() => toggleFav(p.id)}>
           {favs.includes(p.id) ? <><FaHeart /> Retirer de ma sélection</> : <><FaRegHeart /> Ajouter à ma sélection</>}
         </button>
-        <Link className="btn dark" to="/reservation">Réserver</Link>
+        <Link className="btn dark" to={`/reservation?modele=${p.id}`}>Réserver ce modèle</Link>
       </div>
       {cat && <p><Link to={`/modeles?cat=${cat.id}`}>‹ Retour à {cat.nom}</Link></p>}
     </div>
@@ -305,6 +305,7 @@ function Selection() {
           </div>
           <div className="btns">
             <a className="btn wa" href={wa(msg)} target="_blank" rel="noreferrer"><FaWhatsapp /> Envoyer ma sélection à Anta</a>
+            <Link className="btn dark" to="/reservation?selection=1">Réserver ces modèles</Link>
           </div>
         </>
       )}
@@ -313,25 +314,31 @@ function Selection() {
 }
 
 function Reservation() {
-  const { cats, wa } = useSite()
+  const { cats, photos, favs, wa } = useSite()
+  const [sp] = useSearchParams()
+  const [ids, setIds] = useState(() => (sp.get('modele') ? [sp.get('modele')] : sp.get('selection') ? favs : []))
   const [f, setF] = useState({ prestation: '', categorie: '', date: '', heure: '', lieu: '', nom: '', besoins: '' })
   const [err, setErr] = useState('')
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
+  const nomCat = (id) => cats.find((c) => c.id === id)?.nom || ''
+  const choisis = ids.map((id) => photos.find((p) => p.id === id)).filter(Boolean)
+  const catsChoisies = [...new Set(choisis.map((p) => nomCat(p.category_id)).filter(Boolean))]
   const envoyer = (e) => {
     e.preventDefault()
-    if (!f.prestation || !f.date || !f.nom.trim()) {
-      setErr('Merci de choisir une prestation, une date et d’indiquer votre nom.')
+    if ((!f.prestation && choisis.length === 0) || !f.date || !f.nom.trim()) {
+      setErr('Merci d’indiquer la date, votre nom, et une prestation (ou de choisir un modèle).')
       return
     }
     setErr('')
     const d = new Date(f.date + 'T00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
     const lignes = [
       HELLO + 'je souhaite réserver :',
-      `• Prestation : ${f.prestation}`,
-      f.categorie && `• Catégorie de modèle : ${f.categorie}`,
+      f.prestation && `• Prestation : ${f.prestation}`,
+      catsChoisies.length > 0 ? `• Catégorie : ${catsChoisies.join(', ')}` : f.categorie && `• Catégorie de modèle : ${f.categorie}`,
+      choisis.length > 0 && `• Modèles choisis :\n${choisis.map((p, i) => `  ${i + 1}. ${p.titre || nomCat(p.category_id)} : ${p.url}`).join('\n')}`,
       `• Date : ${d}`,
       f.heure && `• Heure : ${f.heure}`,
-      f.lieu && `• Lieu : ${f.lieu}`,
+      f.lieu && `• Quartier / lieu : ${f.lieu}`,
       `• Nom : ${f.nom}`,
       f.besoins && `• Besoins : ${f.besoins}`,
     ]
@@ -341,21 +348,37 @@ function Reservation() {
     <>
       <h1 className="t">Réservation</h1>
       <form className="form" onSubmit={envoyer}>
-        <label>Prestation
+        {choisis.length > 0 && (
+          <div className="choix">
+            <strong>Vos modèles ({choisis.length})</strong>
+            {catsChoisies.length > 0 && <span className="small">Catégorie : {catsChoisies.join(', ')}</span>}
+            <div className="minis">
+              {choisis.map((p) => (
+                <div key={p.id} className="th">
+                  <img src={p.url} alt="" />
+                  <button type="button" onClick={() => setIds((l) => l.filter((x) => x !== p.id))} aria-label="Retirer"><FaTimes /></button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        <label>Prestation{choisis.length > 0 && ' (facultatif)'}
           <select value={f.prestation} onChange={set('prestation')}>
             <option value="">Sélectionnez…</option>
             {PRESTATIONS.map((p) => <option key={p}>{p}</option>)}
           </select>
         </label>
-        <label>Catégorie de modèle (facultatif)
-          <select value={f.categorie} onChange={set('categorie')}>
-            <option value="">—</option>
-            {cats.map((c) => <option key={c.id}>{c.nom}</option>)}
-          </select>
-        </label>
+        {choisis.length === 0 && (
+          <label>Catégorie de modèle (facultatif)
+            <select value={f.categorie} onChange={set('categorie')}>
+              <option value="">—</option>
+              {cats.map((c) => <option key={c.id}>{c.nom}</option>)}
+            </select>
+          </label>
+        )}
         <label>Date souhaitée<input type="date" value={f.date} onChange={set('date')} /></label>
         <label>Heure (facultatif)<input type="time" value={f.heure} onChange={set('heure')} /></label>
-        <label>Lieu (facultatif)<input value={f.lieu} onChange={set('lieu')} placeholder="Quartier, salle, domicile…" /></label>
+        <label>Votre quartier / lieu (facultatif)<input value={f.lieu} onChange={set('lieu')} placeholder="Quartier, salle, domicile…" /></label>
         <label>Votre nom<input value={f.nom} onChange={set('nom')} placeholder="Entrez votre nom" /></label>
         <label>Vos besoins (facultatif)<textarea rows="3" value={f.besoins} onChange={set('besoins')} placeholder="Décrivez vos attentes…" /></label>
         {err && <p className="err">{err}</p>}
