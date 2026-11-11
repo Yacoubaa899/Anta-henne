@@ -953,3 +953,25 @@ footer a {
 .stats span {
     font-size: 12px
 }
+
+.edit {
+    background: var(--creme);
+    border-radius: 12px;
+    padding: 12px;
+    display: grid;
+    gap: 10px
+}
+
+.edit h4 {
+    margin: 0;
+    color: var(--brun)
+}
+
+.grid2 .th img {
+    cursor: pointer
+}
+
+.catli .acts {
+    display: grid;
+    gap: 6px
+}

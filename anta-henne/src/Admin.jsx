@@ -61,6 +61,8 @@ function Panel() {
   const [pub, setPub] = useState({ titre: '', texte: '' })
   const [fichiers, setFichiers] = useState([])
   const [cle2, setCle2] = useState(0)
+  const [edit, setEdit] = useState(null)
+  const [filtre, setFiltre] = useState('')
   const [form, setForm] = useState(() => Object.fromEntries(CHAMPS.map(([k]) => [k, reg[k] || ''])))
   const [msg, setMsg] = useState('')
   const [stats, setStats] = useState(null)
@@ -146,6 +148,25 @@ function Panel() {
     })
   }
 
+  const enregistrerEdit = () =>
+    faire('Enregistrement…', async () => {
+      const { error } = await supabase
+        .from('photos')
+        .update({ titre: edit.titre.trim() || null, texte: edit.texte.trim() || null, category_id: edit.category_id })
+        .eq('id', edit.id)
+      if (error) throw error
+      setEdit(null)
+    })
+
+  const renommerCat = (c) => {
+    const n = window.prompt('Nouveau nom de la catégorie', c.nom)
+    if (!n || !n.trim() || n.trim() === c.nom) return
+    faire('Renommage…', async () => {
+      const { error } = await supabase.from('categories').update({ nom: n.trim() }).eq('id', c.id)
+      if (error) throw error
+    })
+  }
+
   const supprimerAvis = (v) => {
     if (!window.confirm('Supprimer cet avis ?')) return
     faire('Suppression…', async () => {
@@ -161,7 +182,8 @@ function Panel() {
       if (error) throw error
     })
 
-  const dansCat = photos.filter((p) => p.category_id === catId)
+  const liste = filtre ? photos.filter((p) => p.category_id === filtre) : photos
+  const nomCat = (id) => cats.find((c) => c.id === id)?.nom || ''
 
   return (
     <div className="adm">
@@ -195,7 +217,10 @@ function Panel() {
                   <input type="file" accept="image/*" onChange={(e) => { changerCouv(c, e.target.files[0]); e.target.value = '' }} />
                 </label>
               </div>
-              <button className="btn line sm" onClick={() => supprimerCat(c)}>Supprimer</button>
+              <div className="acts">
+                <button className="btn line sm" onClick={() => renommerCat(c)}>Renommer</button>
+                <button className="btn line sm" onClick={() => supprimerCat(c)}>Supprimer</button>
+              </div>
             </li>
           ))}
         </ul>
@@ -204,7 +229,7 @@ function Panel() {
       <section>
         <h3>Publier des modèles</h3>
         <label>Catégorie
-          <select value={catId} onChange={(e) => setCatId(e.target.value)}>
+          <select value={catId} onChange={(e) => { setCatId(e.target.value); setEdit(null) }}>
             <option value="">Choisir…</option>
             {cats.map((c) => <option key={c.id} value={c.id}>{c.nom}</option>)}
           </select>
@@ -216,16 +241,52 @@ function Panel() {
             <label>Photos<input key={cle2} type="file" accept="image/*" multiple onChange={(e) => setFichiers([...e.target.files])} /></label>
             <p className="small">Le titre et la description sont mis sur chaque photo choisie. Pour des titres différents, publie les photos une par une.</p>
             <button className="btn dark" onClick={publier}>Publier</button>
-            <div className="grid2">
-              {dansCat.map((p) => (
-                <div key={p.id} className="th" title={p.titre || ''}>
-                  <img src={p.url} alt="" loading="lazy" />
-                  <button onClick={() => supprimerPhoto(p)} aria-label="Supprimer">✕</button>
-                </div>
-              ))}
-            </div>
           </>
         )}
+      </section>
+
+      <section>
+        <h3>Mes publications</h3>
+        <label>Catégorie
+          <select value={filtre} onChange={(e) => { setFiltre(e.target.value); setEdit(null) }}>
+            <option value="">Toutes</option>
+            {cats.map((c) => <option key={c.id} value={c.id}>{c.nom}</option>)}
+          </select>
+        </label>
+        {edit && (
+          <div className="edit">
+            <h4>Modifier la publication</h4>
+            <label>Catégorie
+              <select value={edit.category_id} onChange={(e) => setEdit({ ...edit, category_id: e.target.value })}>
+                {cats.map((c) => <option key={c.id} value={c.id}>{c.nom}</option>)}
+              </select>
+            </label>
+            <label>Titre<input value={edit.titre} onChange={(e) => setEdit({ ...edit, titre: e.target.value })} /></label>
+            <label>Description<textarea rows="3" value={edit.texte} onChange={(e) => setEdit({ ...edit, texte: e.target.value })} /></label>
+            <div className="row">
+              <button className="btn dark sm" onClick={enregistrerEdit}>Enregistrer</button>
+              <button className="btn line sm" onClick={() => setEdit(null)}>Annuler</button>
+            </div>
+          </div>
+        )}
+        {liste.length === 0 && <p className="small">Aucune publication.</p>}
+        <ul className="liste">
+          {liste.map((p) => (
+            <li key={p.id} className="catli">
+              <img className="mini" src={p.url} alt="" loading="lazy" />
+              <div>
+                <strong>{p.titre || 'Sans titre'}</strong>
+                <br />
+                <span className="small">{nomCat(p.category_id)}</span>
+              </div>
+              <div className="acts">
+                <button className="btn line sm"
+                  onClick={() => setEdit({ id: p.id, titre: p.titre || '', texte: p.texte || '', category_id: p.category_id })}>Modifier</button>
+                <button className="btn line sm" onClick={() => supprimerPhoto(p)}>Supprimer</button>
+              </div>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section>
