@@ -996,3 +996,157 @@ footer a {
 .minis .th {
     width: 72px
 }
+
+.prix {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: var(--brun);
+    color: #fff;
+    padding: 3px 9px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 700;
+    z-index: 1
+}
+
+.prixbig {
+    margin: 0 0 8px;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--orange)
+}
+
+.reals {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    padding: 0 16px
+}
+
+.real {
+    flex: 0 0 100%;
+    background: #fff;
+    border: 1px solid var(--sable);
+    border-radius: 14px;
+    overflow: hidden;
+    text-decoration: none;
+    color: var(--txt);
+    text-align: center
+}
+
+.real img,
+.real .noimg {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--sable);
+    font-size: 40px;
+    color: var(--brun)
+}
+
+.real div:last-child {
+    padding: 10px 12px
+}
+
+.real h3 {
+    margin: 0 0 4px
+}
+
+@media(min-width:700px) {
+    .real {
+        flex-basis: calc(33.33% - 8px)
+    }
+}
+
+.medias {
+    display: grid;
+    gap: 12px;
+    padding: 0 16px;
+    max-width: 640px;
+    margin: 0 auto 12px
+}
+
+.medias img,
+.medias video {
+    width: 100%;
+    border-radius: 12px
+}
+
+.medias iframe {
+    width: 100%;
+    aspect-ratio: 16/9;
+    border: 0;
+    border-radius: 12px
+}
+
+.map {
+    width: 100%;
+    max-width: 640px;
+    height: 320px;
+    border: 0;
+    border-radius: 14px;
+    margin: 12px auto;
+    display: block
+}
+
+.inst-desk {
+    display: none
+}
+
+.bandeau {
+    position: fixed;
+    left: 12px;
+    right: 80px;
+    bottom: 12px;
+    z-index: 29;
+    background: #fff;
+    border: 1px solid var(--sable);
+    border-radius: 14px;
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .2);
+    font-size: 13px
+}
+
+.fermer {
+    background: none;
+    border: 0;
+    color: var(--txt);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px
+}
+
+@media(min-width:900px) {
+    .inst-desk {
+        display: inline-flex
+    }
+
+    .bandeau {
+        display: none
+    }
+}
+
+.th .mini {
+    width: 100%;
+    height: 100%;
+    border-radius: 0
+}
+
+.th .cov {
+    right: auto;
+    left: 4px;
+    background: var(--or)
+}
+
+.iscov {
+    outline: 3px solid var(--or)
+}

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Route, Routes, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import {
   FaChevronLeft, FaChevronRight, FaFacebookF, FaHeart, FaInstagram, FaMapMarkerAlt,
-  FaRegHeart, FaTiktok, FaTimes, FaWhatsapp, FaYoutube,
+  FaDownload, FaRegHeart, FaShareAlt, FaTiktok, FaTimes, FaWhatsapp, FaYoutube,
 } from 'react-icons/fa'
 import { useSite } from './site.jsx'
 import { supabase } from './supabase'
@@ -30,17 +30,47 @@ function Socials() {
   )
 }
 
+function useInstall() {
+  const [evt, setEvt] = useState(null)
+  const [installe, setInstalle] = useState(
+    () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true
+  )
+  const [ios] = useState(() => /iphone|ipad|ipod/i.test(navigator.userAgent))
+  useEffect(() => {
+    const avant = (e) => { e.preventDefault(); setEvt(e) }
+    const fait = () => { setInstalle(true); setEvt(null) }
+    window.addEventListener('beforeinstallprompt', avant)
+    window.addEventListener('appinstalled', fait)
+    return () => {
+      window.removeEventListener('beforeinstallprompt', avant)
+      window.removeEventListener('appinstalled', fait)
+    }
+  }, [])
+  const installer = async () => {
+    if (!evt) return
+    evt.prompt()
+    await evt.userChoice
+    setEvt(null)
+  }
+  return { installe, peut: !!evt, ios, installer }
+}
+
 function Layout({ children }) {
   const { favs, wa } = useSite()
   const { pathname } = useLocation()
+  const inst = useInstall()
+  const [ferme, setFerme] = useState(() => localStorage.getItem('installFerme') === '1')
   useEffect(() => { window.scrollTo(0, 0) }, [pathname])
-  const liens = [['/', 'Accueil'], ['/modeles', 'Modèles'], ['/reservation', 'Réservation'], ['/apropos', 'À propos'], ['/contact', 'Contact']]
+  const liens = [['/', 'Accueil'], ['/modeles', 'Modèles'], ['/realisations', 'Réalisations'], ['/reservation', 'Réservation'], ['/apropos', 'À propos'], ['/contact', 'Contact']]
   return (
     <>
       <header className="top">
         <Link to="/" className="brand"><img src="/logo.jpg" alt="" />Anta henné</Link>
         <Link to="/selection" className="heart" aria-label="Ma sélection"><FaHeart /> {favs.length}</Link>
         <a className="btn wa sm" href={wa(HELLO)} target="_blank" rel="noreferrer"><FaWhatsapp /> WhatsApp</a>
+        {inst.peut && !inst.installe && (
+          <button className="btn line sm inst-desk" onClick={inst.installer}><FaDownload /> Installer l’app</button>
+        )}
         <nav>
           {liens.map(([to, nom]) => <NavLink key={to} to={to} end>{nom}</NavLink>)}
         </nav>
@@ -56,13 +86,23 @@ function Layout({ children }) {
         </p>
         <p className="small">© {new Date().getFullYear()} Anta henné · <Link to="/admin">Espace Anta</Link></p>
       </footer>
+      {!inst.installe && !ferme && (inst.peut || inst.ios) && (
+        <div className="bandeau">
+          {inst.peut ? (
+            <button className="btn dark sm" onClick={inst.installer}><FaDownload /> Installer l’application</button>
+          ) : (
+            <span>Pour installer : touchez Partager, puis « Sur l’écran d’accueil ».</span>
+          )}
+          <button className="fermer" aria-label="Fermer" onClick={() => { localStorage.setItem('installFerme', '1'); setFerme(true) }}><FaTimes /></button>
+        </div>
+      )}
       <a className="float" href={wa(HELLO)} target="_blank" rel="noreferrer" aria-label="Écrire sur WhatsApp"><FaWhatsapp /></a>
     </>
   )
 }
 
 function Home() {
-  const { cats, photos, mix, wa } = useSite()
+  const { cats, photos, mix, reals, wa } = useSite()
   const ref = useRef(null)
   const [n, setN] = useState(12)
   useEffect(() => {
@@ -115,6 +155,15 @@ function Home() {
           <button className="arr r" onClick={() => aller(1)} aria-label="Suivant"><FaChevronRight /></button>
         </div>
       )}
+      {reals.length > 0 && (
+        <>
+          <h2 className="t">Nos réalisations</h2>
+          <div className="reals">
+            {reals.slice(0, 3).map((r) => <RealCard key={r.id} r={r} />)}
+          </div>
+          <div className="btns"><Link className="btn dark" to="/realisations">Voir toutes les réalisations</Link></div>
+        </>
+      )}
       {mix.length > 0 && (
         <>
           <h2 className="t">Nos modèles</h2>
@@ -122,6 +171,7 @@ function Home() {
             {mix.slice(0, n).map((p) => (
               <Link key={p.id} to={`/modele/${p.id}`} className="tile">
                 <img src={p.url} alt={p.titre || ''} loading="lazy" />
+                {p.prix && <span className="prix">{p.prix}</span>}
                 {p.titre && <span className="cap">{p.titre}</span>}
               </Link>
             ))}
@@ -231,26 +281,38 @@ function Temoignages() {
 function Modele() {
   const { id } = useParams()
   const { photos, cats, loading, favs, toggleFav, wa } = useSite()
+  const [copie, setCopie] = useState(false)
   const p = photos.find((x) => x.id === id)
   if (loading) return <p className="pad">Chargement…</p>
   if (!p) return <p className="pad">Modèle introuvable. <Link to="/modeles">Voir les modèles</Link></p>
   const cat = cats.find((c) => c.id === p.category_id)
   const titre = p.titre || cat?.nom || 'Modèle'
+  const partager = async () => {
+    const data = { title: titre, text: `${titre} · Anta henné`, url: window.location.href }
+    if (navigator.share) {
+      try { await navigator.share(data) } catch { /* partage annulé */ }
+    } else {
+      await navigator.clipboard.writeText(data.url)
+      setCopie(true)
+    }
+  }
   return (
     <div className="art">
       <img src={p.url} alt={titre} />
       <h1 className="t">{titre}</h1>
       {cat && p.titre && <p className="small">{cat.nom}</p>}
+      {p.prix && <p className="prixbig">{p.prix}</p>}
       {p.texte && <p className="corps">{p.texte}</p>}
       <div className="btns">
         <a className="btn wa" target="_blank" rel="noreferrer"
-          href={wa(`${HELLO}je suis intéressée par ce modèle${cat ? ` (${cat.nom})` : ''} : ${p.url}`)}>
+          href={wa(`${HELLO}je suis intéressée par ce modèle${cat ? ` (${cat.nom})` : ''}${p.prix ? ` — ${p.prix}` : ''} : ${p.url}`)}>
           <FaWhatsapp /> Demander ce modèle
         </a>
         <button className="btn line" onClick={() => toggleFav(p.id)}>
           {favs.includes(p.id) ? <><FaHeart /> Retirer de ma sélection</> : <><FaRegHeart /> Ajouter à ma sélection</>}
         </button>
         <Link className="btn dark" to={`/reservation?modele=${p.id}`}>Réserver ce modèle</Link>
+        <button className="btn line" onClick={partager}><FaShareAlt /> {copie ? 'Lien copié ✔' : 'Partager'}</button>
       </div>
       {cat && <p><Link to={`/modeles?cat=${cat.id}`}>‹ Retour à {cat.nom}</Link></p>}
     </div>
@@ -276,6 +338,7 @@ function Models() {
         {liste.map((x) => (
           <Link key={x.id} to={`/modele/${x.id}`} className="tile">
             <img src={x.url} alt={x.titre || ''} loading="lazy" />
+            {x.prix && <span className="prix">{x.prix}</span>}
             {x.titre && <span className="cap">{x.titre}</span>}
           </Link>
         ))}
@@ -284,10 +347,73 @@ function Models() {
   )
 }
 
+function RealCard({ r }) {
+  const { medias } = useSite()
+  const ms = medias.filter((m) => m.realisation_id === r.id)
+  const nbP = ms.filter((m) => m.type === 'photo').length
+  const nbV = ms.length - nbP
+  const img = r.couverture || ms.find((m) => m.type === 'photo')?.url
+  const infos = [nbP > 0 && `${nbP} photo${nbP > 1 ? 's' : ''}`, nbV > 0 && `${nbV} vidéo${nbV > 1 ? 's' : ''}`].filter(Boolean).join(' · ')
+  return (
+    <Link to={`/realisation/${r.id}`} className="real">
+      {img ? <img src={img} alt="" loading="lazy" /> : <div className="noimg">▶</div>}
+      <div>
+        <h3>{r.titre}</h3>
+        <span className="small">{infos}</span>
+      </div>
+    </Link>
+  )
+}
+
+function Realisations() {
+  const { reals } = useSite()
+  return (
+    <>
+      <h1 className="t">Nos réalisations</h1>
+      {reals.length === 0 && <p className="pad">Les réalisations arrivent bientôt.</p>}
+      <div className="reals">{reals.map((r) => <RealCard key={r.id} r={r} />)}</div>
+    </>
+  )
+}
+
+const ytId = (u) => (u.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([\w-]{11})/) || [])[1]
+
+function Realisation() {
+  const { id } = useParams()
+  const { reals, medias, loading, wa } = useSite()
+  const r = reals.find((x) => x.id === id)
+  if (loading) return <p className="pad">Chargement…</p>
+  if (!r) return <p className="pad">Réalisation introuvable. <Link to="/realisations">Voir les réalisations</Link></p>
+  const ms = medias.filter((m) => m.realisation_id === id)
+  return (
+    <div className="art">
+      <h1 className="t">{r.titre}</h1>
+      {r.texte && <p className="corps">{r.texte}</p>}
+      <div className="medias">
+        {ms.map((m) => {
+          if (m.type === 'photo') return <a key={m.id} href={m.url} target="_blank" rel="noreferrer"><img src={m.url} alt={r.titre} loading="lazy" /></a>
+          if (m.type === 'video') return <video key={m.id} src={m.url} controls playsInline preload="metadata" />
+          const y = ytId(m.url)
+          return y
+            ? <iframe key={m.id} src={`https://www.youtube.com/embed/${y}`} title={r.titre} allowFullScreen loading="lazy" />
+            : <a key={m.id} className="btn dark" href={lien(m.url)} target="_blank" rel="noreferrer">▶ Voir la vidéo</a>
+        })}
+      </div>
+      <div className="btns">
+        <a className="btn wa" target="_blank" rel="noreferrer"
+          href={wa(`${HELLO}j’aime votre réalisation « ${r.titre} » et je voudrais le même henné : ${window.location.href}`)}>
+          <FaWhatsapp /> Je veux le même henné
+        </a>
+        <Link className="btn line" to="/realisations">‹ Toutes les réalisations</Link>
+      </div>
+    </div>
+  )
+}
+
 function Selection() {
   const { photos, favs, toggleFav, wa } = useSite()
   const liste = photos.filter((p) => favs.includes(p.id))
-  const msg = `${HELLO}voici les modèles qui m’intéressent :\n` + liste.map((p, i) => `${i + 1}. ${p.url}`).join('\n')
+  const msg = `${HELLO}voici les modèles qui m’intéressent :\n` + liste.map((p, i) => `${i + 1}. ${p.titre ? p.titre + ' ' : ''}${p.prix ? '(' + p.prix + ') ' : ''}${p.url}`).join('\n')
   return (
     <>
       <h1 className="t">Ma sélection</h1>
@@ -335,7 +461,7 @@ function Reservation() {
       HELLO + 'je souhaite réserver :',
       f.prestation && `• Prestation : ${f.prestation}`,
       catsChoisies.length > 0 ? `• Catégorie : ${catsChoisies.join(', ')}` : f.categorie && `• Catégorie de modèle : ${f.categorie}`,
-      choisis.length > 0 && `• Modèles choisis :\n${choisis.map((p, i) => `  ${i + 1}. ${p.titre || nomCat(p.category_id)} : ${p.url}`).join('\n')}`,
+      choisis.length > 0 && `• Modèles choisis :\n${choisis.map((p, i) => `  ${i + 1}. ${p.titre || nomCat(p.category_id)}${p.prix ? ' (' + p.prix + ')' : ''} : ${p.url}`).join('\n')}`,
       `• Date : ${d}`,
       f.heure && `• Heure : ${f.heure}`,
       f.lieu && `• Quartier / lieu : ${f.lieu}`,
@@ -421,6 +547,11 @@ function About() {
 function Contact() {
   const { reg } = useSite()
   const adresse = reg.adresse || 'Ouagadougou, Burkina Faso'
+  const brut = reg.maps_embed || ''
+  const extrait = (brut.match(/src="([^"]+)"/) || [])[1] || brut
+  const carte = extrait.startsWith('https://www.google.com/maps/embed')
+    ? extrait
+    : reg.adresse ? `https://www.google.com/maps?q=${encodeURIComponent(reg.adresse)}&output=embed` : ''
   return (
     <>
       <h1 className="t">Contact</h1>
@@ -428,6 +559,7 @@ function Contact() {
         <p><FaWhatsapp /> WhatsApp : <strong>+{reg.whatsapp || '226 05 65 51 70'}</strong></p>
         <p><FaMapMarkerAlt /> Adresse : {adresse}</p>
         <Socials />
+        {carte && <iframe className="map" src={carte} title="Carte" loading="lazy" referrerPolicy="no-referrer-when-downgrade" allowFullScreen />}
         <p>
           <a className="btn dark" target="_blank" rel="noreferrer"
             href={reg.maps ? lien(reg.maps) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(adresse)}`}>Voir sur Google Maps</a>
@@ -443,6 +575,8 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/modeles" element={<Models />} />
+        <Route path="/realisations" element={<Realisations />} />
+        <Route path="/realisation/:id" element={<Realisation />} />
         <Route path="/selection" element={<Selection />} />
         <Route path="/modele/:id" element={<Modele />} />
         <Route path="/reservation" element={<Reservation />} />

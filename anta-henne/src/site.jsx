@@ -27,20 +27,26 @@ export function SiteProvider({ children }) {
   const [photos, setPhotos] = useState([])
   const [avis, setAvis] = useState([])
   const [mix, setMix] = useState([])
+  const [reals, setReals] = useState([])
+  const [medias, setMedias] = useState([])
   const [reg, setReg] = useState({})
   const [loading, setLoading] = useState(true)
   const [favs, setFavs] = useState(lireFavs)
 
   const reload = useCallback(async () => {
-    const [c, p, r, a] = await Promise.all([
+    const [c, p, r, a, rl, rm] = await Promise.all([
       supabase.from('categories').select('*').order('ordre').order('created_at'),
       supabase.from('photos').select('*').order('created_at', { ascending: false }),
       supabase.from('reglages').select('*'),
       supabase.from('avis_publics').select('*').order('created_at', { ascending: false }),
+      supabase.from('realisations').select('*').order('created_at', { ascending: false }),
+      supabase.from('realisation_medias').select('*').order('created_at'),
     ])
     setCats(c.data || [])
     setPhotos(p.data || [])
     setAvis(a.data || [])
+    setReals(rl.data || [])
+    setMedias(rm.data || [])
     setMix(melanger(p.data || []))
     setReg(Object.fromEntries((r.data || []).map((x) => [x.cle, x.valeur])))
     setLoading(false)
@@ -74,7 +80,7 @@ export function SiteProvider({ children }) {
   const mesFavs = loading ? favs : favs.filter((id) => photos.some((p) => p.id === id))
 
   return (
-    <Ctx.Provider value={{ cats, photos, avis, mix, reg, loading, reload, favs: mesFavs, toggleFav, wa }}>
+    <Ctx.Provider value={{ cats, photos, avis, mix, reals, medias, reg, loading, reload, favs: mesFavs, toggleFav, wa }}>
       {children}
     </Ctx.Provider>
   )
