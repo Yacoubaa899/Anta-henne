@@ -305,24 +305,32 @@ function Temoignages() {
   )
 }
 
-function Modele() {
-  const { id } = useParams()
-  const { photos, cats, loading, favs, toggleFav, wa } = useSite()
+function Partager({ titre }) {
   const [copie, setCopie] = useState(false)
-  const p = photos.find((x) => x.id === id)
-  if (loading) return <p className="pad">Chargement…</p>
-  if (!p) return <p className="pad">Modèle introuvable. <Link to="/modeles">Voir les modèles</Link></p>
-  const cat = cats.find((c) => c.id === p.category_id)
-  const titre = p.titre || cat?.nom || 'Modèle'
   const partager = async () => {
     const data = { title: titre, text: `${titre} · Anta henné`, url: window.location.href }
     if (navigator.share) {
       try { await navigator.share(data) } catch { /* partage annulé */ }
     } else {
-      await navigator.clipboard.writeText(data.url)
-      setCopie(true)
+      try {
+        await navigator.clipboard.writeText(data.url)
+        setCopie(true)
+      } catch {
+        window.prompt('Copiez ce lien :', data.url)
+      }
     }
   }
+  return <button className="btn line" onClick={partager}><FaShareAlt /> {copie ? 'Lien copié ✔' : 'Partager'}</button>
+}
+
+function Modele() {
+  const { id } = useParams()
+  const { photos, cats, loading, favs, toggleFav, wa } = useSite()
+  const p = photos.find((x) => x.id === id)
+  if (loading) return <p className="pad">Chargement…</p>
+  if (!p) return <p className="pad">Modèle introuvable. <Link to="/modeles">Voir les modèles</Link></p>
+  const cat = cats.find((c) => c.id === p.category_id)
+  const titre = p.titre || cat?.nom || 'Modèle'
   return (
     <div className="art">
       <img src={p.url} alt={titre} />
@@ -339,7 +347,7 @@ function Modele() {
           {favs.includes(p.id) ? <><FaHeart /> Retirer de ma sélection</> : <><FaRegHeart /> Ajouter à ma sélection</>}
         </button>
         <Link className="btn dark" to={`/reservation?modele=${p.id}`}>Réserver ce modèle</Link>
-        <button className="btn line" onClick={partager}><FaShareAlt /> {copie ? 'Lien copié ✔' : 'Partager'}</button>
+        <Partager titre={titre} />
       </div>
       {cat && <p><Link to={`/modeles?cat=${cat.id}`}>‹ Retour à {cat.nom}</Link></p>}
     </div>
@@ -431,6 +439,7 @@ function Realisation() {
           href={wa(`${HELLO}j’aime votre réalisation « ${r.titre} » et je voudrais le même henné : ${window.location.href}`)}>
           <FaWhatsapp /> Je veux le même henné
         </a>
+        <Partager titre={r.titre} />
         <Link className="btn line" to="/realisations">‹ Toutes les réalisations</Link>
       </div>
     </div>
@@ -497,6 +506,7 @@ function Formation() {
           href={wa(`${HELLO}je souhaite m’inscrire à la formation « ${f.titre} »${f.date_debut ? ` (${f.date_debut})` : ''}. Pouvez-vous me donner plus d’informations ?`)}>
           <FaWhatsapp /> S’inscrire
         </a>
+        <Partager titre={f.titre} />
         <Link className="btn line" to="/formations">‹ Toutes les formations</Link>
       </div>
     </div>
