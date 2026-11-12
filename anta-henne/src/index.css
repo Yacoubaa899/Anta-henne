@@ -1150,3 +1150,22 @@ footer a {
 .iscov {
     outline: 3px solid var(--or)
 }
+
+.bandeau {
+    transition: transform .25s, opacity .25s
+}
+
+.bandeau.cache {
+    transform: translateY(160%);
+    opacity: 0;
+    pointer-events: none
+}
+
+.lienbtn {
+    background: none;
+    border: 0;
+    color: #fff;
+    text-decoration: underline;
+    font: inherit;
+    cursor: pointer
+}

@@ -59,7 +59,18 @@ function Layout({ children }) {
   const { favs, wa } = useSite()
   const { pathname } = useLocation()
   const inst = useInstall()
-  const [ferme, setFerme] = useState(() => localStorage.getItem('installFerme') === '1')
+  const [ferme, setFerme] = useState(() => sessionStorage.getItem('installMasque') === '1')
+  const [defile, setDefile] = useState(false)
+  useEffect(() => {
+    let t
+    const f = () => {
+      setDefile(true)
+      clearTimeout(t)
+      t = setTimeout(() => setDefile(false), 1200)
+    }
+    window.addEventListener('scroll', f, { passive: true })
+    return () => { window.removeEventListener('scroll', f); clearTimeout(t) }
+  }, [])
   useEffect(() => { window.scrollTo(0, 0) }, [pathname])
   const liens = [['/', 'Accueil'], ['/modeles', 'Modèles'], ['/realisations', 'Réalisations'], ['/reservation', 'Réservation'], ['/apropos', 'À propos'], ['/contact', 'Contact']]
   return (
@@ -80,6 +91,13 @@ function Layout({ children }) {
         <p className="fname">Anta henné</p>
         <p className="ftag">L’élégance au naturel</p>
         <Socials />
+        {!inst.installe && (inst.peut || inst.ios) && (
+          <p className="small">
+            {inst.peut
+              ? <button className="lienbtn" onClick={inst.installer}><FaDownload /> Installer l’application</button>
+              : 'Pour installer l’application : touchez Partager, puis « Sur l’écran d’accueil ».'}
+          </p>
+        )}
         <p className="small">
           Site créé par{' '}
           <a href="https://wa.me/22656067179?text=Bonjour%20Yacouba%2C%20je%20vous%20contacte%20depuis%20le%20site%20Anta%20henn%C3%A9." target="_blank" rel="noreferrer">Yacouba Ouedraogo</a>
@@ -87,13 +105,13 @@ function Layout({ children }) {
         <p className="small">© {new Date().getFullYear()} Anta henné · <Link to="/admin">Espace Anta</Link></p>
       </footer>
       {!inst.installe && !ferme && (inst.peut || inst.ios) && (
-        <div className="bandeau">
+        <div className={'bandeau' + (defile ? ' cache' : '')}>
           {inst.peut ? (
             <button className="btn dark sm" onClick={inst.installer}><FaDownload /> Installer l’application</button>
           ) : (
             <span>Pour installer : touchez Partager, puis « Sur l’écran d’accueil ».</span>
           )}
-          <button className="fermer" aria-label="Fermer" onClick={() => { localStorage.setItem('installFerme', '1'); setFerme(true) }}><FaTimes /></button>
+          <button className="fermer" aria-label="Fermer" onClick={() => { sessionStorage.setItem('installMasque', '1'); setFerme(true) }}><FaTimes /></button>
         </div>
       )}
       <a className="float" href={wa(HELLO)} target="_blank" rel="noreferrer" aria-label="Écrire sur WhatsApp"><FaWhatsapp /></a>
@@ -159,7 +177,7 @@ function Home() {
         <>
           <h2 className="t">Nos réalisations</h2>
           <div className="reals">
-            {reals.slice(0, 3).map((r) => <RealCard key={r.id} r={r} />)}
+            {reals.slice(0, 1).map((r) => <RealCard key={r.id} r={r} />)}
           </div>
           <div className="btns"><Link className="btn dark" to="/realisations">Voir toutes les réalisations</Link></div>
         </>
