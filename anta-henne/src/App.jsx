@@ -72,7 +72,7 @@ function Layout({ children }) {
     return () => { window.removeEventListener('scroll', f); clearTimeout(t) }
   }, [])
   useEffect(() => { window.scrollTo(0, 0) }, [pathname])
-  const liens = [['/', 'Accueil'], ['/modeles', 'Modèles'], ['/realisations', 'Réalisations'], ['/reservation', 'Réservation'], ['/apropos', 'À propos'], ['/contact', 'Contact']]
+  const liens = [['/', 'Accueil'], ['/modeles', 'Modèles'], ['/realisations', 'Réalisations'], ['/formations', 'Formations'], ['/reservation', 'Réservation'], ['/apropos', 'À propos'], ['/contact', 'Contact']]
   return (
     <>
       <header className="top">
@@ -120,7 +120,7 @@ function Layout({ children }) {
 }
 
 function Home() {
-  const { cats, photos, mix, reals, wa } = useSite()
+  const { cats, photos, mix, reals, formations, wa } = useSite()
   const ref = useRef(null)
   const [n, setN] = useState(12)
   useEffect(() => {
@@ -173,14 +173,23 @@ function Home() {
           <button className="arr r" onClick={() => aller(1)} aria-label="Suivant"><FaChevronRight /></button>
         </div>
       )}
-      {reals.length > 0 && (
-        <>
-          <h2 className="t">Nos réalisations</h2>
-          <div className="reals">
-            {reals.slice(0, 1).map((r) => <RealCard key={r.id} r={r} />)}
-          </div>
-          <div className="btns"><Link className="btn dark" to="/realisations">Voir toutes les réalisations</Link></div>
-        </>
+      {(reals.length > 0 || formations.length > 0) && (
+        <div className="duo">
+          {reals.length > 0 && (
+            <div className="col">
+              <h2 className="t">Nos réalisations</h2>
+              <div className="reals">{reals.slice(0, 1).map((r) => <RealCard key={r.id} r={r} />)}</div>
+              <div className="btns"><Link className="btn dark" to="/realisations">Voir toutes les réalisations</Link></div>
+            </div>
+          )}
+          {formations.length > 0 && (
+            <div className="col">
+              <h2 className="t">Nos formations</h2>
+              <div className="reals">{formations.slice(0, 1).map((f) => <FormationCard key={f.id} f={f} />)}</div>
+              <div className="btns"><Link className="btn dark" to="/formations">Voir toutes les formations</Link></div>
+            </div>
+          )}
+        </div>
       )}
       {mix.length > 0 && (
         <>
@@ -428,6 +437,72 @@ function Realisation() {
   )
 }
 
+function FormationCard({ f }) {
+  const img = f.couverture || f.images?.[0]?.url
+  const infos = [f.duree, f.prix].filter(Boolean).join(' · ')
+  return (
+    <Link to={`/formation/${f.id}`} className="real">
+      {img ? <img src={img} alt="" loading="lazy" /> : <div className="noimg">🎓</div>}
+      <div>
+        <h3>{f.titre}</h3>
+        <span className="small">{infos}</span>
+      </div>
+    </Link>
+  )
+}
+
+function FormationsPage() {
+  const { formations } = useSite()
+  return (
+    <>
+      <h1 className="t">Nos formations</h1>
+      {formations.length === 0 && <p className="pad">Les formations arrivent bientôt.</p>}
+      <div className="reals">{formations.map((f) => <FormationCard key={f.id} f={f} />)}</div>
+    </>
+  )
+}
+
+function Formation() {
+  const { id } = useParams()
+  const { formations, loading, wa } = useSite()
+  const f = formations.find((x) => x.id === id)
+  if (loading) return <p className="pad">Chargement…</p>
+  if (!f) return <p className="pad">Formation introuvable. <Link to="/formations">Voir les formations</Link></p>
+  const img = f.couverture || f.images?.[0]?.url
+  const lignes = [['Durée', f.duree], ['Prix', f.prix], ['Lieu', f.lieu], ['Prochaine session', f.date_debut], ['Niveau', f.niveau], ['Places', f.places]].filter(([, v]) => v)
+  const points = (f.programme || '').split('\n').map((x) => x.trim()).filter(Boolean)
+  return (
+    <div className="art">
+      {img && <img src={img} alt={f.titre} />}
+      <h1 className="t">{f.titre}</h1>
+      {f.texte && <p className="corps">{f.texte}</p>}
+      {lignes.length > 0 && (
+        <ul className="infos">
+          {lignes.map(([k, v]) => <li key={k}><strong>{k}</strong><span>{v}</span></li>)}
+        </ul>
+      )}
+      {points.length > 0 && (
+        <>
+          <h3>Au programme</h3>
+          <ul className="prog">{points.map((x, i) => <li key={i}>{x}</li>)}</ul>
+        </>
+      )}
+      {(f.images || []).length > 0 && (
+        <div className="medias">
+          {f.images.map((m) => <a key={m.url} href={m.url} target="_blank" rel="noreferrer"><img src={m.url} alt={f.titre} loading="lazy" /></a>)}
+        </div>
+      )}
+      <div className="btns">
+        <a className="btn wa" target="_blank" rel="noreferrer"
+          href={wa(`${HELLO}je souhaite m’inscrire à la formation « ${f.titre} »${f.date_debut ? ` (${f.date_debut})` : ''}. Pouvez-vous me donner plus d’informations ?`)}>
+          <FaWhatsapp /> S’inscrire
+        </a>
+        <Link className="btn line" to="/formations">‹ Toutes les formations</Link>
+      </div>
+    </div>
+  )
+}
+
 function Selection() {
   const { photos, favs, toggleFav, wa } = useSite()
   const liste = photos.filter((p) => favs.includes(p.id))
@@ -593,6 +668,8 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/modeles" element={<Models />} />
+        <Route path="/formations" element={<FormationsPage />} />
+        <Route path="/formation/:id" element={<Formation />} />
         <Route path="/realisations" element={<Realisations />} />
         <Route path="/realisation/:id" element={<Realisation />} />
         <Route path="/selection" element={<Selection />} />

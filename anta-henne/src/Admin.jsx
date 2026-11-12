@@ -226,6 +226,165 @@ function Realisations({ faire, setMsg }) {
   )
 }
 
+const VIDE = { titre: '', texte: '', duree: '', prix: '', lieu: '', date_debut: '', niveau: '', places: '', programme: '' }
+const CH_FORM = [
+  ['duree', 'Durée', 'Ex : 2 semaines'],
+  ['prix', 'Prix', 'Ex : 50 000 FCFA'],
+  ['lieu', 'Lieu', 'Ex : Ouagadougou, quartier…'],
+  ['date_debut', 'Prochaine session', 'Ex : à partir du 15 décembre'],
+  ['niveau', 'Niveau', 'Ex : débutante'],
+  ['places', 'Nombre de places', 'Ex : 10'],
+]
+
+function ChampsFormation({ v, set }) {
+  return (
+    <>
+      <label>Titre<input value={v.titre} onChange={(e) => set({ ...v, titre: e.target.value })} /></label>
+      <label>Description (facultatif)<textarea rows="3" value={v.texte} onChange={(e) => set({ ...v, texte: e.target.value })} /></label>
+      {CH_FORM.map(([k, l, p]) => (
+        <label key={k}>{l} (facultatif)<input value={v[k]} placeholder={p} onChange={(e) => set({ ...v, [k]: e.target.value })} /></label>
+      ))}
+      <label>Au programme (facultatif, un point par ligne)
+        <textarea rows="4" value={v.programme} onChange={(e) => set({ ...v, programme: e.target.value })} />
+      </label>
+    </>
+  )
+}
+
+function Formations({ faire, setMsg }) {
+  const { formations } = useSite()
+  const [nv, setNv] = useState(VIDE)
+  const [couv, setCouv] = useState(null)
+  const [fichiers, setFichiers] = useState([])
+  const [cle, setCle] = useState(0)
+  const [edit, setEdit] = useState(null)
+  const [nvCouv, setNvCouv] = useState(null)
+  const [plus, setPlus] = useState([])
+  const [cle2, setCle2] = useState(0)
+
+  const champs = (v) => Object.fromEntries(Object.keys(VIDE).map((k) => [k, v[k].trim() || null]))
+  const televerser = async (files) => {
+    const res = []
+    for (const [i, f] of files.entries()) {
+      setMsg(`Envoi ${i + 1}/${files.length}…`)
+      res.push(await envoyerImage(f, 'formations'))
+    }
+    return res
+  }
+
+  const creer = () =>
+    nv.titre.trim() &&
+    faire('Création…', async () => {
+      const [c] = couv ? await televerser([couv]) : [{}]
+      const images = await televerser(fichiers)
+      const { error } = await supabase.from('formations').insert({
+        ...champs(nv), titre: nv.titre.trim(), couverture: c.url || null, couverture_chemin: c.chemin || null, images,
+      })
+      if (error) throw error
+      setNv(VIDE)
+      setCouv(null)
+      setFichiers([])
+      setCle((n) => n + 1)
+    })
+
+  const enregistrer = () =>
+    faire('Enregistrement…', async () => {
+      if (!edit.titre.trim()) throw new Error('Le titre est obligatoire.')
+      const f = formations.find((x) => x.id === edit.id)
+      const patch = { ...champs(edit), titre: edit.titre.trim() }
+      if (nvCouv) {
+        const [c] = await televerser([nvCouv])
+        if (f.couverture_chemin) await supabase.storage.from('photos').remove([f.couverture_chemin])
+        patch.couverture = c.url
+        patch.couverture_chemin = c.chemin
+      }
+      if (plus.length) patch.images = [...(f.images || []), ...(await televerser(plus))]
+      const { error } = await supabase.from('formations').update(patch).eq('id', edit.id)
+      if (error) throw error
+      setNvCouv(null)
+      setPlus([])
+      setCle2((n) => n + 1)
+    })
+
+  const retirerImage = (f, img) => {
+    if (!window.confirm('Supprimer cette photo ?')) return
+    faire('Suppression…', async () => {
+      if (img.chemin) await supabase.storage.from('photos').remove([img.chemin])
+      const { error } = await supabase.from('formations').update({ images: (f.images || []).filter((x) => x.url !== img.url) }).eq('id', f.id)
+      if (error) throw error
+    })
+  }
+
+  const supprimer = (f) => {
+    if (!window.confirm(`Supprimer la formation « ${f.titre} » ?`)) return
+    faire('Suppression…', async () => {
+      const chemins = [f.couverture_chemin, ...(f.images || []).map((x) => x.chemin)].filter(Boolean)
+      if (chemins.length) await supabase.storage.from('photos').remove(chemins)
+      const { error } = await supabase.from('formations').delete().eq('id', f.id)
+      if (error) throw error
+      if (edit?.id === f.id) setEdit(null)
+    })
+  }
+
+  const fEdit = edit ? formations.find((x) => x.id === edit.id) : null
+
+  return (
+    <section>
+      <h3>Formations</h3>
+      <ChampsFormation v={nv} set={setNv} />
+      <label>Photo de couverture (facultatif)
+        <input key={'c' + cle} type="file" accept="image/*" onChange={(e) => setCouv(e.target.files[0] || null)} />
+      </label>
+      <label>Autres photos (facultatif)
+        <input key={'p' + cle} type="file" accept="image/*" multiple onChange={(e) => setFichiers([...e.target.files])} />
+      </label>
+      <button className="btn dark" onClick={creer}>Publier la formation</button>
+
+      {edit && fEdit && (
+        <div className="edit">
+          <h4>Modifier la formation</h4>
+          <ChampsFormation v={edit} set={setEdit} />
+          <label>Changer la photo de couverture
+            <input key={'nc' + cle2} type="file" accept="image/*" onChange={(e) => setNvCouv(e.target.files[0] || null)} />
+          </label>
+          <div className="minis">
+            {(fEdit.images || []).map((img) => (
+              <div key={img.url} className="th">
+                <img src={img.url} alt="" />
+                <button type="button" onClick={() => retirerImage(fEdit, img)} aria-label="Supprimer">✕</button>
+              </div>
+            ))}
+          </div>
+          <label>Ajouter des photos
+            <input key={'np' + cle2} type="file" accept="image/*" multiple onChange={(e) => setPlus([...e.target.files])} />
+          </label>
+          <div className="row">
+            <button className="btn dark sm" onClick={enregistrer}>Enregistrer</button>
+            <button className="btn line sm" onClick={() => setEdit(null)}>Fermer</button>
+          </div>
+        </div>
+      )}
+
+      <ul className="liste">
+        {formations.map((f) => (
+          <li key={f.id} className="catli">
+            {f.couverture || f.images?.[0] ? <img className="mini" src={f.couverture || f.images[0].url} alt="" /> : <span className="mini">Pas de photo</span>}
+            <div>
+              <strong>{f.titre}</strong>
+              <br />
+              <span className="small">{[f.duree, f.prix].filter(Boolean).join(' · ')}</span>
+            </div>
+            <div className="acts">
+              <button className="btn line sm" onClick={() => setEdit({ id: f.id, ...Object.fromEntries(Object.keys(VIDE).map((k) => [k, f[k] || ''])) })}>Modifier</button>
+              <button className="btn line sm" onClick={() => supprimer(f)}>Supprimer</button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
 function Panel() {
   const { cats, photos, avis, reg, reload } = useSite()
   const [nom, setNom] = useState('')
@@ -466,6 +625,8 @@ function Panel() {
       </section>
 
       <Realisations faire={faire} setMsg={setMsg} />
+
+      <Formations faire={faire} setMsg={setMsg} />
 
       <section>
         <h3>Contacts et réseaux</h3>
