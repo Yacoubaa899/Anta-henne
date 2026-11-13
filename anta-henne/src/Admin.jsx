@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import { useSite } from './site.jsx'
 
@@ -386,7 +386,7 @@ function Formations({ faire, setMsg }) {
 }
 
 function Panel() {
-  const { cats, photos, avis, reg, reload } = useSite()
+  const { cats, photos, reg, reload } = useSite()
   const [nom, setNom] = useState('')
   const [couv, setCouv] = useState(null)
   const [cle, setCle] = useState(0)
@@ -399,6 +399,16 @@ function Panel() {
   const [form, setForm] = useState(() => Object.fromEntries(CHAMPS.map(([k]) => [k, reg[k] || ''])))
   const [msg, setMsg] = useState('')
   const [stats, setStats] = useState(null)
+  const [tous, setTous] = useState([])
+
+  const chargerAvis = useCallback(async () => {
+    const { data } = await supabase.from('avis').select('*').order('created_at', { ascending: false })
+    setTous(data || [])
+  }, [])
+
+  useEffect(() => {
+    chargerAvis()
+  }, [chargerAvis])
 
   useEffect(() => {
     const j = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10)
@@ -412,6 +422,7 @@ function Panel() {
     try {
       await action()
       await reload()
+      await chargerAvis()
       setMsg('Terminé ✔')
     } catch (e) {
       setMsg('Erreur : ' + (e.message || e))
@@ -500,8 +511,14 @@ function Panel() {
     })
   }
 
+  const approuverAvis = (v) =>
+    faire('Publication de l’avis…', async () => {
+      const { error } = await supabase.from('avis').update({ approuve: true }).eq('id', v.id)
+      if (error) throw error
+    })
+
   const supprimerAvis = (v) => {
-    if (!window.confirm('Supprimer cet avis ?')) return
+    if (!window.confirm('Supprimer cet avis ? Cette action est définitive.')) return
     faire('Suppression…', async () => {
       const { error } = await supabase.from('avis').delete().eq('id', v.id)
       if (error) throw error
@@ -515,6 +532,8 @@ function Panel() {
       if (error) throw error
     })
 
+  const enAttente = tous.filter((v) => !v.approuve)
+  const publies = tous.filter((v) => v.approuve)
   const liste = filtre ? photos.filter((p) => p.category_id === filtre) : photos
   const nomCat = (id) => cats.find((c) => c.id === id)?.nom || ''
 
@@ -522,6 +541,12 @@ function Panel() {
     <div className="adm">
       <h1 className="t">Espace Anta</h1>
       {msg && <p className="msg">{msg}</p>}
+      {enAttente.length > 0 && (
+        <p className="msg alerte">
+          🔔 {enAttente.length} avis en attente de ta validation.{' '}
+          <button className="lienbtn sombre" onClick={() => document.getElementById('avis')?.scrollIntoView({ behavior: 'smooth' })}>Voir</button>
+        </p>
+      )}
 
       <section>
         <h3>Visites du site</h3>
@@ -639,11 +664,28 @@ function Panel() {
         <button className="btn dark" onClick={enregistrer}>Enregistrer</button>
       </section>
 
-      <section>
-        <h3>Avis des clientes</h3>
-        <p className="small">Les clientes publient leur avis elles-mêmes. Tu peux supprimer un avis inapproprié.</p>
+      <section id="avis">
+        <h3>Avis des clientes {enAttente.length > 0 && <span className="badge">{enAttente.length} en attente</span>}</h3>
+        <p className="small">Un avis n’apparaît sur le site qu’après ton accord.</p>
+        {enAttente.length > 0 && <h4>À valider</h4>}
         <ul className="liste">
-          {avis.map((v) => (
+          {enAttente.map((v) => (
+            <li key={v.id} className="avli">
+              <div>
+                {v.photo && <img className="mini" src={v.photo} alt="" />}
+                <div>{'★'.repeat(v.etoiles)} <strong>{v.nom}</strong> <span className="small">{v.email}</span></div>
+                <div>{v.texte}</div>
+              </div>
+              <div className="acts">
+                <button className="btn dark sm" onClick={() => approuverAvis(v)}>Publier</button>
+                <button className="btn line sm" onClick={() => supprimerAvis(v)}>Refuser</button>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <h4>Publiés ({publies.length})</h4>
+        <ul className="liste">
+          {publies.map((v) => (
             <li key={v.id}>
               <span>{'★'.repeat(v.etoiles)} <strong>{v.nom}</strong> : {v.texte.slice(0, 60)}</span>
               <button className="btn line sm" onClick={() => supprimerAvis(v)}>Supprimer</button>

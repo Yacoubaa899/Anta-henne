@@ -276,7 +276,7 @@ function Temoignages() {
           </div>
         ))}
       </div>
-      {ok && <p className="pad">Merci pour votre avis ! Il est maintenant publié.</p>}
+      {ok && <p className="pad">Merci pour votre avis !</p>}
       {!ouvert && !ok && (
         <div className="btns"><button className="btn dark" onClick={() => setOuvert(true)}>Donner mon avis</button></div>
       )}
