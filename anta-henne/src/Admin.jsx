@@ -385,6 +385,106 @@ function Formations({ faire, setMsg }) {
   )
 }
 
+const GUIDE = [
+  {
+    t: '1. Créer une catégorie', e: [
+      'Va dans **Catégories**.',
+      'Écris le **nom** de la catégorie (par exemple : Mariées).',
+      'Choisis une **photo de couverture** : c’est l’image que les clientes voient sur l’accueil.',
+      'Clique sur **Créer la catégorie**.',
+      'Pour changer le nom, la photo ou la supprimer, utilise **Renommer**, **Changer la couverture** ou **Supprimer** sur sa ligne. Attention : supprimer une catégorie supprime aussi ses publications.',
+    ]
+  },
+  {
+    t: '2. Publier un modèle', e: [
+      'Dans **Publier des modèles**, choisis la **catégorie**.',
+      'Écris un **titre**, une **description** et un **prix** si tu veux (tout est facultatif).',
+      'Clique sur **Photos** et choisis une ou plusieurs photos de ton téléphone.',
+      'Clique sur **Publier** et attends « Terminé ✔ ».',
+      'Ouvre l’accueil du site pour vérifier. Si tu as choisi plusieurs photos, chacune devient une publication avec le même titre et le même prix.',
+    ]
+  },
+  {
+    t: '3. Modifier ou supprimer une publication', e: [
+      'Va dans **Mes publications**. Choisis une catégorie pour filtrer, ou garde « Toutes ».',
+      'Pour changer le titre, la description, le prix ou la catégorie : clique sur **Modifier**, change ce que tu veux, puis clique sur **Enregistrer**.',
+      'Pour retirer une publication : clique sur **Supprimer**, puis confirme.',
+      'Pour changer la photo : supprime la publication et publie-la de nouveau.',
+    ]
+  },
+  {
+    t: '4. Publier une réalisation', e: [
+      'Dans **Réalisations**, écris un **titre** (par exemple : Mariage de Fatou) et une description.',
+      'Choisis plusieurs **photos et vidéos**. La première photo sert de couverture.',
+      'Une vidéo doit peser moins de 50 Mo (environ 40 secondes, filmée en 720p). Pour une vidéo plus longue, colle un **lien TikTok, YouTube ou Facebook**.',
+      'Clique sur **Publier la réalisation**.',
+      'Pour changer la couverture ou retirer un élément : clique sur **Modifier**, puis sur ★ (couverture) ou ✕ (supprimer), puis sur **Enregistrer**.',
+    ]
+  },
+  {
+    t: '5. Publier une formation', e: [
+      'Dans **Formations**, écris le **titre**. Les autres champs (durée, prix, lieu, prochaine session, niveau, places, programme) sont facultatifs.',
+      'Dans **Au programme**, écris un point par ligne.',
+      'Ajoute une **photo de couverture** et d’autres photos si tu veux.',
+      'Clique sur **Publier la formation**.',
+      'Les clientes verront un bouton **S’inscrire** qui t’écrit sur WhatsApp.',
+    ]
+  },
+  {
+    t: '6. Valider ou refuser un avis', e: [
+      'Les avis des clientes n’apparaissent pas tout de suite : ils attendent ton accord.',
+      'Quand un avis est en attente, un bandeau 🔔 s’affiche en haut. Clique sur **Voir**.',
+      'Dans **À valider**, lis l’avis, puis clique sur **Publier** (il apparaît sur le site) ou sur **Refuser** (il est supprimé).',
+      'Pour retirer un avis déjà publié : clique sur **Supprimer** dans la liste **Publiés**.',
+    ]
+  },
+  {
+    t: '7. Changer ses contacts, ses réseaux et la carte', e: [
+      'Va dans **Contacts et réseaux**.',
+      'Remplis le **numéro WhatsApp** (au format 226XXXXXXXX, sans le +), les liens de tes réseaux et ton **adresse**.',
+      'Un réseau n’apparaît sur le site que si son lien est rempli.',
+      'Colle le **lien Google Maps** de la boutique et, si Yacouba te l’a donné, le **code d’intégration de la carte**.',
+      'Clique sur **Enregistrer**.',
+    ]
+  },
+  {
+    t: '8. Voir les visites du site', e: [
+      'Tout en haut de cette page, la section **Visites du site** montre combien d’appareils sont venus aujourd’hui, sur 7 jours, sur 30 jours et depuis le début.',
+      'Une visite compte un appareil par jour. Tes propres visites, quand tu es connectée, ne sont pas comptées.',
+    ]
+  },
+  {
+    t: '9. Conseils importants', e: [
+      'Garde toujours les **photos originales** sur ton téléphone : le site n’a pas de sauvegarde automatique.',
+      'Filme les vidéos courtes et en **720p**.',
+      'Attends « Terminé ✔ » avant de quitter la page.',
+      'Quand tu as fini, clique sur **Se déconnecter** (surtout sur un téléphone prêté).',
+      'Ne donne jamais ton mot de passe à personne.',
+    ]
+  },
+]
+
+const Gras = ({ t }) => t.split('**').map((p, i) => (i % 2 ? <strong key={i}>{p}</strong> : p))
+
+function Guide() {
+  return (
+    <details className="guide">
+      <summary>📖 Guide : comment ça marche ?</summary>
+      {GUIDE.map((s) => (
+        <details key={s.t} className="sujet">
+          <summary>{s.t}</summary>
+          <ol>{s.e.map((x, i) => <li key={i}><Gras t={x} /></li>)}</ol>
+        </details>
+      ))}
+      <p className="small">10. Un problème ou une question ? Écris à Yacouba.</p>
+      <a className="btn wa sm" target="_blank" rel="noreferrer"
+        href="https://wa.me/22656067179?text=Bonjour%20Yacouba%2C%20j%E2%80%99ai%20un%20probl%C3%A8me%20avec%20l%E2%80%99espace%20d%E2%80%99administration%20du%20site%20Anta%20henn%C3%A9.">
+        💬 Écrire à Yacouba
+      </a>
+    </details>
+  )
+}
+
 function Panel() {
   const { cats, photos, reg, reload } = useSite()
   const [nom, setNom] = useState('')
@@ -547,6 +647,8 @@ function Panel() {
           <button className="lienbtn sombre" onClick={() => document.getElementById('avis')?.scrollIntoView({ behavior: 'smooth' })}>Voir</button>
         </p>
       )}
+
+      <Guide />
 
       <section>
         <h3>Visites du site</h3>
