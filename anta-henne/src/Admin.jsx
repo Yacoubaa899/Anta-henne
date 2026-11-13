@@ -443,7 +443,7 @@ const GUIDE = [
       'Va dans **Contacts et réseaux**.',
       'Remplis le **numéro WhatsApp** (au format 226XXXXXXXX, sans le +), les liens de tes réseaux et ton **adresse**.',
       'Un réseau n’apparaît sur le site que si son lien est rempli.',
-      'Colle le **lien Google Maps** de la boutique et, si Yacouba te l’a donné, le **code d’intégration de la carte**.',
+      'Colle le **lien Google Maps** de la boutique.',
       'Clique sur **Enregistrer**.',
     ]
   },
